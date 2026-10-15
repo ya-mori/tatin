@@ -75,7 +75,32 @@ else
     echo "$out" | grep -m 2 -E 'error:' | sed 's/^/       /'
 fi
 
-echo "[7] コード署名"
+echo "[7] ツールチェーンの版ずれ"
+# CommandLineTools を入れ直すと、一部のフレームワークだけ別の版が残ることがある。
+# Testing.framework と swiftc がずれると、アプリは問題なくビルドできるのに
+# swift test だけがマクロ展開で落ちる（__ifMainActorIsolationEnforced が無い等）。
+if [ -n "$dev_dir" ]; then
+    testing_interface="$dev_dir/Library/Developer/Frameworks/Testing.framework/Versions/A/Modules/Testing.swiftmodule/arm64-apple-macos.swiftinterface"
+    if [ ! -f "$testing_interface" ]; then
+        warn "Testing.framework が無い。swift-testing を使うテストは動かない"
+    else
+        version_of() { sed -n 's/.*Apple Swift version \([0-9][0-9.]*\).*/\1/p' | head -1; }
+        framework_version="$(version_of < "$testing_interface")"
+        compiler_version="$(swiftc --version 2>/dev/null | version_of)"
+        if [ -n "$framework_version" ] && [ -n "$compiler_version" ] &&
+           [ "$framework_version" != "$compiler_version" ]; then
+            ng "Testing.framework ($framework_version) と swiftc ($compiler_version) の版がずれている"
+            echo "       swift test だけが落ちる。入れ直して揃える:"
+            echo "       sudo softwareupdate --install \"Command Line Tools for Xcode-16.4\""
+        else
+            ok "Testing.framework と swiftc が揃っている ($compiler_version)"
+        fi
+    fi
+else
+    warn "[1] が未解決のため判定できない"
+fi
+
+echo "[8] コード署名"
 if security find-identity -v -p codesigning 2>/dev/null | grep -q 'valid identities found' &&
    ! security find-identity -v -p codesigning 2>/dev/null | grep -q '0 valid identities found'; then
     ok "署名 ID あり"

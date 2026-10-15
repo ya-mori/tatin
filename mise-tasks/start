@@ -24,4 +24,4 @@ if pgrep -f "$dist/$app.app" > /dev/null; then
 fi
 
 open "$dist/$app.app"
-echo "started: $app（メニューバーを確認してください）"
+echo "started: ${app}（メニューバーを確認してください）"
