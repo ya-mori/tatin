@@ -1,0 +1,15 @@
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# tatin のバンドル出力先
+dist/
+
+# Xcode（このリポジトリでは使わないが、誤生成を取り込まないため）
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+
+# macOS
+.DS_Store

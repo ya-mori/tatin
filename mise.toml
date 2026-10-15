@@ -1,0 +1,53 @@
+# tatin — 自前の macOS ツール群を置くモノレポ
+#
+# Makefile は使わず、ここにタスクをまとめる。
+# クローン直後は `mise trust` が必要。未 trust だと以下の [tasks] が
+# 黙って認識されず「no task found」になる。
+#
+# 引数を取るタスク（アプリ名を渡すもの）は mise-tasks/ 配下のスクリプトにある。
+# 一覧は `mise tasks ls` で確認できる。
+
+[tools]
+# Swift は CommandLineTools 同梱のものを使うため、ここでは固定しない。
+# バージョンを固定したくなったら swift = "6.x" を足す。
+# ただし Foundation/AppKit/SwiftUI の macOS SDK は CommandLineTools 側から来るため、
+# mise で Swift を入れても CommandLineTools は必要。
+
+[env]
+# 各タスクが参照するビルド設定。debug に切り替えたいときはここを変える。
+TATIN_BUILD_CONFIG = "release"
+# .app の出力先。
+TATIN_DIST_DIR = "dist"
+
+[tasks.build]
+description = "全ターゲットをビルドする"
+run = "swift build -c $TATIN_BUILD_CONFIG"
+
+[tasks.test]
+description = "テストを実行する"
+run = "swift test"
+
+[tasks.fmt]
+description = "ソースを整形する"
+run = "swift format --in-place --recursive Apps Libraries Tests Package.swift"
+
+[tasks.lint]
+description = "整形崩れを検査する（CI 向け。崩れていれば失敗する）"
+run = "swift format lint --strict --recursive Apps Libraries Tests Package.swift"
+
+[tasks.clean]
+description = "ビルド成果物と .app を削除する"
+run = "rm -rf .build $TATIN_DIST_DIR"
+
+[tasks.bundle-all]
+description = "Apps 配下の全アプリを .app にまとめる"
+run = '''
+for dir in Apps/*/; do
+    ./mise-tasks/bundle "$(basename "$dir")"
+done
+'''
+
+[tasks.check]
+description = "整形検査・ビルド・テストをまとめて実行する"
+depends = ["lint", "build", "test"]
+run = "echo 'check: 通過'"

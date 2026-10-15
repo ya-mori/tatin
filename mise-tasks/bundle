@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#MISE description="指定アプリを .app にまとめて署名する（例: mise run bundle MenuBar）"
+set -euo pipefail
+
+cd "${MISE_PROJECT_ROOT:-$(git rev-parse --show-toplevel)}"
+
+app="${1:-}"
+if [ -z "$app" ]; then
+    echo "アプリ名を指定してください（例: mise run bundle MenuBar）" >&2
+    exit 2
+fi
+if [ ! -d "Apps/$app" ]; then
+    echo "Apps/$app がありません。利用できるアプリ: $(ls Apps 2>/dev/null | tr '\n' ' ')" >&2
+    exit 2
+fi
+
+plist="Apps/$app/Bundle/Info.plist"
+if [ ! -f "$plist" ]; then
+    echo "$plist がありません" >&2
+    exit 2
+fi
+
+config="${TATIN_BUILD_CONFIG:-release}"
+dist="${TATIN_DIST_DIR:-dist}"
+
+swift build -c "$config" --product "$app"
+bin="$(swift build -c "$config" --show-bin-path)/$app"
+
+bundle="$dist/$app.app"
+rm -rf "$bundle"
+mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+cp "$bin" "$bundle/Contents/MacOS/$app"
+cp "$plist" "$bundle/Contents/Info.plist"
+printf 'APPL????' > "$bundle/Contents/PkgInfo"
+
+# 署名 ID を持っていない環境が前提なので既定は ad-hoc 署名。
+# 配布用に本物の証明書を使うときは TATIN_CODESIGN_IDENTITY を指定する。
+identity="${TATIN_CODESIGN_IDENTITY:--}"
+codesign --force --sign "$identity" --timestamp=none "$bundle"
+
+echo "bundled: $bundle"

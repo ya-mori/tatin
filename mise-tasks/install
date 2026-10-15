@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#MISE description="指定アプリを ~/Applications に配置する（例: mise run install MenuBar）"
+set -euo pipefail
+
+cd "${MISE_PROJECT_ROOT:-$(git rev-parse --show-toplevel)}"
+
+app="${1:-}"
+if [ -z "$app" ]; then
+    echo "アプリ名を指定してください（例: mise run install MenuBar）" >&2
+    exit 2
+fi
+
+dist="${TATIN_DIST_DIR:-dist}"
+./mise-tasks/bundle "$app"
+
+target="$HOME/Applications"
+mkdir -p "$target"
+
+# 起動中だと差し替えに失敗するため先に落とす。
+pkill -f "$target/$app.app" 2>/dev/null || true
+
+rm -rf "${target:?}/$app.app"
+cp -R "$dist/$app.app" "$target/$app.app"
+
+echo "installed: $target/$app.app"

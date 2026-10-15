@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#MISE description="指定アプリをビルドして起動し直す（例: mise run start MenuBar）"
+set -euo pipefail
+
+cd "${MISE_PROJECT_ROOT:-$(git rev-parse --show-toplevel)}"
+
+app="${1:-}"
+if [ -z "$app" ]; then
+    echo "アプリ名を指定してください（例: mise run start MenuBar）" >&2
+    exit 2
+fi
+
+dist="${TATIN_DIST_DIR:-dist}"
+./mise-tasks/bundle "$app"
+
+# 旧プロセスが残っているとメニューバーに項目が二重に並ぶため、先に落とす。
+if pgrep -f "$dist/$app.app" > /dev/null; then
+    pkill -f "$dist/$app.app"
+    # 終了を待つ（最大 2 秒）。待たずに open すると旧プロセスが生き残ることがある。
+    for _ in $(seq 1 20); do
+        pgrep -f "$dist/$app.app" > /dev/null || break
+        sleep 0.1
+    done
+fi
+
+open "$dist/$app.app"
+echo "started: $app（メニューバーを確認してください）"

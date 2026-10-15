@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+#MISE description="新しいアプリを雛形から追加する（例: mise run new-app Clipboard）"
+set -euo pipefail
+
+cd "${MISE_PROJECT_ROOT:-$(git rev-parse --show-toplevel)}"
+
+app="${1:-}"
+if [ -z "$app" ]; then
+    echo "アプリ名を指定してください（例: mise run new-app Clipboard）" >&2
+    exit 2
+fi
+
+# 名前はそのまま Swift のターゲット名・型名・実行ファイル名になるため、英数字に限る。
+if ! printf '%s' "$app" | grep -qE '^[A-Z][A-Za-z0-9]*$'; then
+    echo "アプリ名は英大文字で始まる英数字にしてください（例: Clipboard）" >&2
+    exit 2
+fi
+
+if [ -d "Apps/$app" ]; then
+    echo "Apps/$app は既にあります" >&2
+    exit 2
+fi
+
+if ! grep -q 'tatin:targets' Package.swift; then
+    echo "Package.swift に追記位置のマーカーが見つかりません" >&2
+    exit 2
+fi
+
+bundle_id="${TATIN_BUNDLE_ID_PREFIX:-dev.tatin}.$app"
+
+mkdir -p "Apps/$app/Sources" "Apps/$app/Bundle"
+
+cat > "Apps/$app/Sources/${app}App.swift" <<SWIFT
+import SwiftUI
+import TatinKit
+
+@main
+struct ${app}App: App {
+    var body: some Scene {
+        MenuBarExtra("$app", systemImage: "square.dashed") {
+            Button("終了") {
+                NSApplication.shared.terminate(nil)
+            }
+            .keyboardShortcut("q")
+        }
+    }
+}
+SWIFT
+
+cat > "Apps/$app/Bundle/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>$app</string>
+    <key>CFBundleIdentifier</key>
+    <string>$bundle_id</string>
+    <key>CFBundleName</key>
+    <string>$app</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <!-- メニューバー常駐アプリなので Dock とアプリスイッチャに出さない。 -->
+    <key>LSUIElement</key>
+    <true/>
+</dict>
+</plist>
+PLIST
+
+# Package.swift のマーカー行の直前に、新しいアプリの定義を差し込む。
+awk -v app="$app" '
+    /tatin:products/ {
+        printf("        .executable(name: \"%s\", targets: [\"%s\"]),\n", app, app)
+    }
+    /tatin:targets/ {
+        printf("        .executableTarget(\n")
+        printf("            name: \"%s\",\n", app)
+        printf("            dependencies: [\"TatinKit\"],\n")
+        printf("            path: \"Apps/%s/Sources\",\n", app)
+        printf("            swiftSettings: [.swiftLanguageMode(.v6)]\n")
+        printf("        ),\n")
+    }
+    { print }
+' Package.swift > Package.swift.new
+mv Package.swift.new Package.swift
+
+echo "追加しました:"
+echo "  Apps/$app/Sources/${app}App.swift"
+echo "  Apps/$app/Bundle/Info.plist  (bundle id: $bundle_id)"
+echo "  Package.swift に $app のターゲットを追記"
+echo
+echo "起動するには: mise run start $app"

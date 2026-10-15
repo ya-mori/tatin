@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+#MISE description="Swift のビルド環境に既知の壊れ方がないか診断する"
+# 失敗しても全項目を見たいので set -e は使わない。
+set -uo pipefail
+
+cd "${MISE_PROJECT_ROOT:-$(git rev-parse --show-toplevel)}"
+
+fail=0
+ok()   { printf '  \033[32m OK \033[0m %s\n' "$1"; }
+warn() { printf '  \033[33mWARN\033[0m %s\n' "$1"; }
+ng()   { printf '  \033[31m NG \033[0m %s\n' "$1"; fail=1; }
+
+echo "tatin doctor"
+echo
+
+echo "[1] 開発ツールの場所"
+if dev_dir="$(xcode-select -p 2>/dev/null)" && [ -d "$dev_dir" ]; then
+    ok "$dev_dir"
+else
+    ng "開発ツールが見つからない。次で入れ直す:"
+    echo "       sudo softwareupdate --install \"Command Line Tools for Xcode-16.4\""
+    dev_dir=""
+fi
+
+echo "[2] Swift コンパイラ"
+if ver="$(swift --version 2>/dev/null | head -1)"; then
+    ok "$ver"
+else
+    ng "swift が動かない。[1] を解消すること"
+fi
+
+echo "[3] SwiftBridging の二重定義"
+# CommandLineTools を上書き更新すると、古い module.modulemap が残って
+# bridging.modulemap と同じ module SwiftBridging を二重定義することがある。
+# こうなると Foundation すら import できなくなる。
+if [ -n "$dev_dir" ]; then
+    stale="$dev_dir/usr/include/swift/module.modulemap"
+    if [ -f "$stale" ] && [ -f "$dev_dir/usr/include/swift/bridging.modulemap" ]; then
+        ng "古い module.modulemap が残っている（Foundation の import が壊れる）"
+        echo "       sudo mv '$stale' '$stale.disabled'"
+    else
+        ok "二重定義なし"
+    fi
+else
+    warn "[1] が未解決のため判定できない"
+fi
+
+echo "[4] macOS SDK"
+if sdk="$(xcrun --show-sdk-path 2>/dev/null)" && [ -d "$sdk/System/Library/Frameworks/SwiftUI.framework" ]; then
+    ok "SDK $(xcrun --show-sdk-version 2>/dev/null) ($sdk)"
+else
+    ng "SwiftUI を含む macOS SDK が見つからない"
+fi
+
+echo "[5] Foundation のビルド"
+tmp="$(mktemp -d)"
+printf 'import Foundation\nprint("ok")\n' > "$tmp/probe.swift"
+if swiftc "$tmp/probe.swift" -o "$tmp/probe" > "$tmp/log" 2>&1; then
+    ok "import Foundation が通る"
+else
+    ng "import Foundation が通らない。先頭のエラー:"
+    grep -m 2 'error:' "$tmp/log" | sed 's/^/       /'
+fi
+rm -rf "$tmp"
+
+echo "[6] SwiftPM のマニフェスト評価"
+# CommandLineTools の更新に失敗していると PackageDescription の
+# dylib と swiftmodule が食い違い、Package.swift の評価だけが落ちる。
+if [ ! -f Package.swift ]; then
+    warn "Package.swift がまだ無いので省略"
+elif out="$(swift package dump-package 2>&1 > /dev/null)"; then
+    ok "Package.swift を評価できる"
+else
+    ng "Package.swift を評価できない:"
+    echo "$out" | grep -m 2 -E 'error:' | sed 's/^/       /'
+fi
+
+echo "[7] コード署名"
+if security find-identity -v -p codesigning 2>/dev/null | grep -q 'valid identities found' &&
+   ! security find-identity -v -p codesigning 2>/dev/null | grep -q '0 valid identities found'; then
+    ok "署名 ID あり"
+else
+    warn "署名 ID なし。.app は ad-hoc 署名になる（手元で動かす分には問題ない）"
+fi
+
+echo
+if [ "$fail" -eq 0 ]; then
+    printf '\033[32m診断は通過しました。\033[0m\n'
+else
+    printf '\033[31m上の NG を解消してください。\033[0m\n'
+fi
+exit "$fail"
