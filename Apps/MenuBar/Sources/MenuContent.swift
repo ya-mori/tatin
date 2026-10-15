@@ -10,6 +10,8 @@ struct MenuContent: View {
     private static let logger = TatinLog.logger(category: "MenuContent")
 
     var body: some View {
+        Text("Hello, tatin!")
+
         Text("\(metadata.name) \(metadata.displayVersion)")
 
         Divider()
