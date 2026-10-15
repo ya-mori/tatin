@@ -48,6 +48,9 @@ mise run start Clipboard
 
 `Apps/Clipboard/` の雛形と `Package.swift` のターゲットが作られる。
 
+アプリアイコンを付けるには `Apps/<アプリ名>/Bundle/AppIcon.icns` を置く。
+`bundle` が `.app` に入れる（Info.plist の `CFBundleIconFile` は雛形に入っている）。
+
 ## 構成
 
 ```

@@ -54,6 +54,9 @@ cat > "Apps/$app/Bundle/Info.plist" <<PLIST
 <dict>
     <key>CFBundleExecutable</key>
     <string>$app</string>
+    <!-- Bundle/AppIcon.icns を置くとアプリアイコンになる。無ければ白紙のまま。 -->
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>$bundle_id</string>
     <key>CFBundleName</key>

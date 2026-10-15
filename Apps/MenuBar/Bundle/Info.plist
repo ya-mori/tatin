@@ -4,6 +4,9 @@
 <dict>
     <key>CFBundleExecutable</key>
     <string>MenuBar</string>
+    <!-- Contents/Resources/AppIcon.icns を指す。拡張子は書かない。 -->
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>dev.tatin.MenuBar</string>
     <key>CFBundleName</key>

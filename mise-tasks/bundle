@@ -33,6 +33,13 @@ cp "$bin" "$bundle/Contents/MacOS/$app"
 cp "$plist" "$bundle/Contents/Info.plist"
 printf 'APPL????' > "$bundle/Contents/PkgInfo"
 
+# アイコンがあれば入れる。Info.plist の CFBundleIconFile と名前を揃える必要があるため、
+# 置き場所とファイル名は Bundle/AppIcon.icns に固定する。
+icon="Apps/$app/Bundle/AppIcon.icns"
+if [ -f "$icon" ]; then
+    cp "$icon" "$bundle/Contents/Resources/AppIcon.icns"
+fi
+
 # 署名 ID を持っていない環境が前提なので既定は ad-hoc 署名。
 # 配布用に本物の証明書を使うときは TATIN_CODESIGN_IDENTITY を指定する。
 identity="${TATIN_CODESIGN_IDENTITY:--}"
