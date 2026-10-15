@@ -9,12 +9,19 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "TatinKit", targets: ["TatinKit"]),
+        .executable(name: "MenuBar", targets: ["MenuBar"]),
         // tatin:products — `mise run new-app` はこの行の前に追記する
     ],
     targets: [
         .target(
             name: "TatinKit",
             path: "Libraries/TatinKit/Sources",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "MenuBar",
+            dependencies: ["TatinKit"],
+            path: "Apps/MenuBar/Sources",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         // tatin:targets — `mise run new-app` はこの行の前に追記する
