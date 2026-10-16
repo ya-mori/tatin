@@ -15,11 +15,11 @@ public enum UsageSource: String, Sendable, CaseIterable, Identifiable {
         }
     }
 
-    /// メニューバーに並べるための短い名前。幅が限られるので 2 文字に収める。
-    public var shortName: String {
+    /// メニューバーに出す記号。それぞれのロゴに形が近いものを選んでいる。
+    public var symbolName: String {
         switch self {
-        case .claude: "CL"
-        case .codex: "CX"
+        case .claude: "asterisk"  // Anthropic のマークと同じ放射状
+        case .codex: "camera.aperture"  // OpenAI のマークに近い渦
         }
     }
 }

@@ -21,7 +21,7 @@ private func snapshot(_ source: UsageSource, _ percent: Int) -> UsageSnapshot {
 struct UsageStoreTests {
     @Test("メニューバーには取得元ごとの消化率を並べる")
     @MainActor
-    func menuBarListsEachSource() async {
+    func menuBarShowsEachSource() async {
         let store = UsageStore(providers: [
             StubProvider(source: .claude, result: .success(snapshot(.claude, 25))),
             StubProvider(source: .codex, result: .success(snapshot(.codex, 23))),
@@ -29,7 +29,8 @@ struct UsageStoreTests {
 
         await store.refresh()
 
-        #expect(store.menuBarTitle == "CL 25%  CX 23%")
+        #expect(
+            store.menuBarItems == [.init(source: .claude, text: "25%"), .init(source: .codex, text: "23%")])
         #expect(store.lastRefreshedAt != nil)
     }
 
@@ -47,7 +48,8 @@ struct UsageStoreTests {
         #expect(store.entries.first?.error == .unauthorized)
         #expect(store.entries.first?.snapshot == nil)
         // 取れなかった側も並びから消さない。幅が変わって隣のアイコンが動くため。
-        #expect(store.menuBarTitle == "CL --  CX 23%")
+        #expect(
+            store.menuBarItems == [.init(source: .claude, text: "--"), .init(source: .codex, text: "23%")])
     }
 
     @Test("どれも取れなければ取得元ごとに印を出す")
@@ -60,15 +62,17 @@ struct UsageStoreTests {
 
         await store.refresh()
 
-        #expect(store.menuBarTitle == "CL --  CX --")
+        #expect(
+            store.menuBarItems == [.init(source: .claude, text: "--"), .init(source: .codex, text: "--")])
     }
 
-    @Test("まだ一度も取れていなければ印だけ出す")
+    @Test("まだ一度も取れていなくても並びの形は変えない")
     @MainActor
-    func beforeFirstRefreshShowsPlaceholder() {
+    func beforeFirstRefreshKeepsShape() {
         let store = UsageStore(providers: [])
 
-        #expect(store.menuBarTitle == "--")
+        #expect(store.menuBarItems.map(\.source) == UsageSource.allCases)
+        #expect(store.menuBarItems.allSatisfy { $0.text == "--" })
     }
 
     @Test("並びは取得の速さに左右されない")

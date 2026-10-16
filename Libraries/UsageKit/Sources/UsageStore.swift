@@ -24,6 +24,17 @@ public struct UsageEntry: Identifiable, Sendable {
     }
 }
 
+/// メニューバーに並べる 1 件ぶん。記号は取得元が、数字はその時の消化率が決める。
+public struct MenuBarItem: Equatable, Sendable {
+    public let source: UsageSource
+    public let text: String
+
+    public init(source: UsageSource, text: String) {
+        self.source = source
+        self.text = text
+    }
+}
+
 /// すべての取得元をまとめて引き、画面に見せる状態を持つ。
 @MainActor
 @Observable
@@ -100,17 +111,19 @@ public final class UsageStore {
         autoRefreshTask = nil
     }
 
-    /// メニューバーに添える文字列。取得元ごとに短い名前と消化率を並べる。
+    /// メニューバーに並べる中身。取得元ごとに記号ひとつと数字ひとつ。
     ///
-    /// 取れなかった取得元は "--" にして、並びから消さない。
-    /// 数字が減ると幅が変わり、隣のアイコンの位置まで動いてしまう。
-    public var menuBarTitle: String {
-        guard !entries.isEmpty else { return "--" }
+    /// 取れなかった取得元も "--" で並びに残す。数が減ると幅が変わり、
+    /// 隣のアイコンの位置まで動いてしまう。まだ一度も引けていないときも同じ。
+    public var menuBarItems: [MenuBarItem] {
+        guard !entries.isEmpty else {
+            return UsageSource.allCases.map { MenuBarItem(source: $0, text: "--") }
+        }
         return entries.map { entry in
-            guard let snapshot = entry.snapshot else {
-                return "\(entry.source.shortName) --"
-            }
-            return "\(entry.source.shortName) \(snapshot.usedPercent)%"
-        }.joined(separator: "  ")
+            MenuBarItem(
+                source: entry.source,
+                text: entry.snapshot.map { "\($0.usedPercent)%" } ?? "--"
+            )
+        }
     }
 }

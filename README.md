@@ -33,8 +33,9 @@ mise run start MenuBar
 mise run start Usage
 ```
 
-メニューバーには取得元ごとに `CL`（Claude）・`CX`（Codex）と消化率を並べる。
-アイコンを押すと内訳とリセットまでの残りが出る。
+メニューバーには取得元ごとに記号と消化率を並べる。記号はそれぞれのロゴに
+形が近い SF Symbols（Claude は `asterisk`、Codex は `camera.aperture`）。
+押すと内訳とリセットまでの残りが出る。
 
 値は Claude Code の `/usage` や Codex が参照しているのと同じ API から引く。
 認証には本体が置いた OAuth トークンを使うため、**Claude Code と Codex CLI に
