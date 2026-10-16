@@ -9,6 +9,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "TatinKit", targets: ["TatinKit"]),
+        .library(name: "UsageKit", targets: ["UsageKit"]),
         .executable(name: "MenuBar", targets: ["MenuBar"]),
         // tatin:products — `mise run new-app` はこの行の前に追記する
     ],
@@ -16,6 +17,11 @@ let package = Package(
         .target(
             name: "TatinKit",
             path: "Libraries/TatinKit/Sources",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .target(
+            name: "UsageKit",
+            path: "Libraries/UsageKit/Sources",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .executableTarget(
@@ -29,6 +35,12 @@ let package = Package(
             name: "TatinKitTests",
             dependencies: ["TatinKit"],
             path: "Tests/TatinKitTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "UsageKitTests",
+            dependencies: ["UsageKit"],
+            path: "Tests/UsageKitTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]
