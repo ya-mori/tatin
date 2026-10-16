@@ -20,6 +20,30 @@ mise run start MenuBar
 `start` はビルドして `.app` にまとめ、起動し直すところまでやる。
 メニューバーにアイコンが出れば成功。
 
+## アプリ
+
+| アプリ | 内容 |
+| --- | --- |
+| `MenuBar` | 足場の確認用。バージョンの表示とログイン項目の切り替えだけを持つ |
+| `Usage` | Claude と Codex の月次クレジット消化率をメニューバーに出す |
+
+### Usage
+
+```sh
+mise run start Usage
+```
+
+メニューバーには、取得できたうちで最も進んでいる消化率だけを出す。
+アイコンを押すと取得元ごとの内訳とリセットまでの残りが並ぶ。
+
+値は Claude Code の `/usage` や Codex が参照しているのと同じ API から引く。
+認証には本体が置いた OAuth トークンを使うため、**Claude Code と Codex CLI に
+それぞれログイン済みであること**が前提。片方が未ログインでも、もう片方は表示する。
+
+Claude のトークンはキーチェーンにあるため、初回の起動で許可を聞かれる。
+「常に許可」を選ぶ。ad-hoc 署名はビルドの内容が変わると署名も変わるので、
+作り直したあとに再び聞かれることがある。
+
 ## タスク
 
 `mise tasks ls` で一覧できる。
@@ -58,6 +82,7 @@ Apps/<アプリ名>/
   Sources/            Swift のソース
   Bundle/Info.plist   .app に埋め込む情報（LSUIElement など）
 Libraries/TatinKit/   全アプリ共通のコード
+Libraries/UsageKit/   使用率の取得（Usage が使う）
 Tests/                テスト
 mise-tasks/           引数を取るタスク（mise.toml からは分離）
 ```
@@ -72,6 +97,9 @@ mise-tasks/           引数を取るタスク（mise.toml からは分離）
 - **`.app` は ad-hoc 署名。**
   手元で動かす分には問題ない。配布するときは `TATIN_CODESIGN_IDENTITY` に
   署名 ID を渡す。
+- **使用率は取得元の API から引く。セッションログからは計算しない。**
+  ローカルのログを定価で積み上げてみたところ、実際の請求額と 2.6 倍ずれた。
+  Codex 側は Business プランだとログの `rate_limits` が空になり、そもそも使えない。
 - **ビルドが通らないときはまず `mise run doctor`。**
   Command Line Tools は入れ直したときに古いファイルが残ることがあり、
   `import Foundation` すら通らなくなる、`swift test` だけが落ちる、といった
