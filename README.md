@@ -33,8 +33,8 @@ mise run start MenuBar
 mise run start Usage
 ```
 
-メニューバーには、取得できたうちで最も進んでいる消化率だけを出す。
-アイコンを押すと取得元ごとの内訳とリセットまでの残りが並ぶ。
+メニューバーには取得元ごとに `CL`（Claude）・`CX`（Codex）と消化率を並べる。
+アイコンを押すと内訳とリセットまでの残りが出る。
 
 値は Claude Code の `/usage` や Codex が参照しているのと同じ API から引く。
 認証には本体が置いた OAuth トークンを使うため、**Claude Code と Codex CLI に

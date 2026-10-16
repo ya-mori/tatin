@@ -100,14 +100,17 @@ public final class UsageStore {
         autoRefreshTask = nil
     }
 
-    /// 取得できたもののうち最も進んでいる消化率。メニューバーにはこれだけ出す。
-    public var highestUsedPercent: Int? {
-        entries.compactMap { $0.snapshot?.usedPercent }.max()
-    }
-
-    /// メニューバーに添える文字列。まだ何も取れていなければ "--"。
+    /// メニューバーに添える文字列。取得元ごとに短い名前と消化率を並べる。
+    ///
+    /// 取れなかった取得元は "--" にして、並びから消さない。
+    /// 数字が減ると幅が変わり、隣のアイコンの位置まで動いてしまう。
     public var menuBarTitle: String {
-        guard let percent = highestUsedPercent else { return "--" }
-        return "\(percent)%"
+        guard !entries.isEmpty else { return "--" }
+        return entries.map { entry in
+            guard let snapshot = entry.snapshot else {
+                return "\(entry.source.shortName) --"
+            }
+            return "\(entry.source.shortName) \(snapshot.usedPercent)%"
+        }.joined(separator: "  ")
     }
 }

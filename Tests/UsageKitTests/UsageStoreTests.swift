@@ -19,9 +19,9 @@ private func snapshot(_ source: UsageSource, _ percent: Int) -> UsageSnapshot {
 
 @Suite("取得結果の集約")
 struct UsageStoreTests {
-    @Test("メニューバーには最も進んでいる消化率を出す")
+    @Test("メニューバーには取得元ごとの消化率を並べる")
     @MainActor
-    func highestPercentWins() async {
+    func menuBarListsEachSource() async {
         let store = UsageStore(providers: [
             StubProvider(source: .claude, result: .success(snapshot(.claude, 25))),
             StubProvider(source: .codex, result: .success(snapshot(.codex, 23))),
@@ -29,8 +29,7 @@ struct UsageStoreTests {
 
         await store.refresh()
 
-        #expect(store.highestUsedPercent == 23)
-        #expect(store.menuBarTitle == "23%")
+        #expect(store.menuBarTitle == "CL 25%  CX 23%")
         #expect(store.lastRefreshedAt != nil)
     }
 
@@ -47,10 +46,11 @@ struct UsageStoreTests {
         #expect(store.entries.count == 2)
         #expect(store.entries.first?.error == .unauthorized)
         #expect(store.entries.first?.snapshot == nil)
-        #expect(store.highestUsedPercent == 23)
+        // 取れなかった側も並びから消さない。幅が変わって隣のアイコンが動くため。
+        #expect(store.menuBarTitle == "CL --  CX 23%")
     }
 
-    @Test("どれも取れなければ数字を出さない")
+    @Test("どれも取れなければ取得元ごとに印を出す")
     @MainActor
     func allFailuresShowPlaceholder() async {
         let store = UsageStore(providers: [
@@ -60,7 +60,14 @@ struct UsageStoreTests {
 
         await store.refresh()
 
-        #expect(store.highestUsedPercent == nil)
+        #expect(store.menuBarTitle == "CL --  CX --")
+    }
+
+    @Test("まだ一度も取れていなければ印だけ出す")
+    @MainActor
+    func beforeFirstRefreshShowsPlaceholder() {
+        let store = UsageStore(providers: [])
+
         #expect(store.menuBarTitle == "--")
     }
 

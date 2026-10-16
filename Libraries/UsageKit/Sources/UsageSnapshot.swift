@@ -14,6 +14,14 @@ public enum UsageSource: String, Sendable, CaseIterable, Identifiable {
         case .codex: "Codex"
         }
     }
+
+    /// メニューバーに並べるための短い名前。幅が限られるので 2 文字に収める。
+    public var shortName: String {
+        switch self {
+        case .claude: "CL"
+        case .codex: "CX"
+        }
+    }
 }
 
 /// ある時点での上限消化の状況。
