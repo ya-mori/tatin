@@ -47,7 +47,7 @@ struct UsageMenu: View {
             return "\(entry.source.displayName): \(entry.error?.errorDescription ?? "取得できません")"
         }
 
-        var parts = ["\(entry.source.displayName)  \(snapshot.usedPercent)%"]
+        var parts = ["\(entry.source.displayName)  \(snapshot.remainingPercent)%"]
         if !snapshot.detail.isEmpty {
             parts.append(snapshot.detail)
         }

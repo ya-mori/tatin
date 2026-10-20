@@ -19,7 +19,7 @@ private func snapshot(_ source: UsageSource, _ percent: Int) -> UsageSnapshot {
 
 @Suite("取得結果の集約")
 struct UsageStoreTests {
-    @Test("メニューバーには取得元ごとの消化率を並べる")
+    @Test("メニューバーには取得元ごとの残りを並べる")
     @MainActor
     func menuBarShowsEachSource() async {
         let store = UsageStore(providers: [
@@ -30,7 +30,7 @@ struct UsageStoreTests {
         await store.refresh()
 
         #expect(
-            store.menuBarItems == [.init(source: .claude, text: "25%"), .init(source: .codex, text: "23%")])
+            store.menuBarItems == [.init(source: .claude, text: "75%"), .init(source: .codex, text: "77%")])
         #expect(store.lastRefreshedAt != nil)
     }
 
@@ -49,7 +49,7 @@ struct UsageStoreTests {
         #expect(store.entries.first?.snapshot == nil)
         // 取れなかった側も並びから消さない。幅が変わって隣のアイコンが動くため。
         #expect(
-            store.menuBarItems == [.init(source: .claude, text: "--"), .init(source: .codex, text: "23%")])
+            store.menuBarItems == [.init(source: .claude, text: "--"), .init(source: .codex, text: "77%")])
     }
 
     @Test("どれも取れなければ取得元ごとに印を出す")

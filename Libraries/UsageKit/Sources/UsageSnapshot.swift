@@ -49,6 +49,13 @@ public struct UsageSnapshot: Sendable, Equatable {
         self.fetchedAt = fetchedAt
     }
 
+    /// 上限に対する残りの割合（%）。
+    ///
+    /// 上限を超えていても負の数は出さない。残りが無いことだけ分かればよい。
+    public var remainingPercent: Int {
+        max(0, 100 - usedPercent)
+    }
+
     /// "あと 15 日" のような、リセットまでの残り。
     ///
     /// 日単位では潰れてしまう最終日だけ時間で出す。

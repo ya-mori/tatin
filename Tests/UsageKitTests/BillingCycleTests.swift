@@ -43,6 +43,18 @@ struct BillingCycleTests {
         #expect(snapshot(resetAt: utc(2026, 10, 15)).resetDescription(now: now) == "まもなくリセット")
     }
 
+    @Test("残りの割合は消化率の裏返しで、上限を超えても負にしない")
+    func remainingPercentNeverGoesNegative() {
+        func snapshot(used: Int) -> UsageSnapshot {
+            UsageSnapshot(source: .claude, usedPercent: used, detail: "", resetAt: nil)
+        }
+
+        #expect(snapshot(used: 25).remainingPercent == 75)
+        #expect(snapshot(used: 0).remainingPercent == 100)
+        #expect(snapshot(used: 100).remainingPercent == 0)
+        #expect(snapshot(used: 130).remainingPercent == 0)
+    }
+
     @Test("リセット時刻が無ければ残り時間も出さない")
     func noResetMeansNoDescription() {
         let snapshot = UsageSnapshot(source: .codex, usedPercent: 23, detail: "", resetAt: nil)

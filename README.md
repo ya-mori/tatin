@@ -33,7 +33,7 @@ mise run start MenuBar
 mise run start Usage
 ```
 
-メニューバーには取得元ごとに記号と消化率を並べる。記号はそれぞれのロゴに
+メニューバーには取得元ごとに記号と、上限に対する残りの割合を並べる。記号はそれぞれのロゴに
 形が近い SF Symbols（Claude は `asterisk`、Codex は `camera.aperture`）。
 押すと内訳とリセットまでの残りが出る。
 

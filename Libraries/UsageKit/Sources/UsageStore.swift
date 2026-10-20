@@ -111,7 +111,7 @@ public final class UsageStore {
         autoRefreshTask = nil
     }
 
-    /// メニューバーに並べる中身。取得元ごとに記号ひとつと数字ひとつ。
+    /// メニューバーに並べる中身。取得元ごとに記号ひとつと、残りの割合ひとつ。
     ///
     /// 取れなかった取得元も "--" で並びに残す。数が減ると幅が変わり、
     /// 隣のアイコンの位置まで動いてしまう。まだ一度も引けていないときも同じ。
@@ -122,7 +122,7 @@ public final class UsageStore {
         return entries.map { entry in
             MenuBarItem(
                 source: entry.source,
-                text: entry.snapshot.map { "\($0.usedPercent)%" } ?? "--"
+                text: entry.snapshot.map { "\($0.remainingPercent)%" } ?? "--"
             )
         }
     }
