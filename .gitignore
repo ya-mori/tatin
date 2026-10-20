@@ -13,3 +13,6 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# AI エージェントの作業メモ（リポジトリには入れない）
+.ai_workspace/
