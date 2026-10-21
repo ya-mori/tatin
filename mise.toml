@@ -18,6 +18,8 @@
 TATIN_BUILD_CONFIG = "release"
 # .app の出力先。
 TATIN_DIST_DIR = "dist"
+# 開発用のコード署名証明書の名前。dev-cert が作り、bundle が探す。
+TATIN_DEV_CERT_NAME = "tatin development"
 
 [tasks.build]
 description = "全ターゲットをビルドする"
@@ -38,6 +40,51 @@ run = "swift format lint --strict --recursive Apps Libraries Tests Package.swift
 [tasks.clean]
 description = "ビルド成果物と .app を削除する"
 run = "rm -rf .build $TATIN_DIST_DIR"
+
+[tasks.dev-cert]
+description = "開発用のコード署名証明書を作る（無ければ bundle は ad-hoc 署名になる）"
+run = '''
+set -euo pipefail
+name="$TATIN_DEV_CERT_NAME"
+if security find-identity -v -p codesigning | grep -qF "$name"; then
+    echo "already: ${name}（作り直すならキーチェーンアクセスから消す）"
+    exit 0
+fi
+
+# 秘密鍵をリポジトリの中に置かないよう、生成は作業用の一時ディレクトリで行う。
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+
+cat > "$work/openssl.cnf" <<EOF
+[req]
+distinguished_name = dn
+prompt = no
+[dn]
+CN = $name
+[ext]
+basicConstraints = critical,CA:false
+keyUsage = critical,digitalSignature
+extendedKeyUsage = critical,codeSigning
+EOF
+
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+    -config "$work/openssl.cnf" -extensions ext \
+    -keyout "$work/key.pem" -out "$work/cert.pem" 2>/dev/null
+# OpenSSL 3 の既定（AES + 空パスワード）で書くと security import が読めないので、
+# 暗号化方式を 3DES/SHA-1 に落とし、使い捨てのパスワードを付ける。
+pass="$(openssl rand -hex 16)"
+openssl pkcs12 -export -out "$work/cert.p12" \
+    -inkey "$work/key.pem" -in "$work/cert.pem" -passout "pass:$pass" \
+    -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1
+
+keychain="$HOME/Library/Keychains/login.keychain-db"
+# -T で codesign にだけ鍵の使用を許す。-A にすると全アプリから使えてしまう。
+security import "$work/cert.p12" -k "$keychain" -T /usr/bin/codesign -P "$pass"
+# 自己署名なので、信頼設定を入れないと codesign から有効な ID として見えない。
+security add-trusted-cert -r trustRoot -p codeSign -k "$keychain" "$work/cert.pem"
+
+echo "created: $name"
+'''
 
 [tasks.bundle-all]
 description = "Apps 配下の全アプリを .app にまとめる"

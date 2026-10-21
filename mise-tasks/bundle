@@ -40,9 +40,26 @@ if [ -f "$icon" ]; then
     cp "$icon" "$bundle/Contents/Resources/AppIcon.icns"
 fi
 
-# 署名 ID を持っていない環境が前提なので既定は ad-hoc 署名。
-# 配布用に本物の証明書を使うときは TATIN_CODESIGN_IDENTITY を指定する。
-identity="${TATIN_CODESIGN_IDENTITY:--}"
+# 署名 ID は、TATIN_CODESIGN_IDENTITY → 開発用証明書 → ad-hoc の順に選ぶ。
+#
+# ad-hoc 署名は署名要件がビルド内容のハッシュそのものになるため、作り直すたびに
+# macOS からは別のアプリに見える。キーチェーンの「常に許可」は署名要件ごとに
+# 記録される仕組みなので、ad-hoc のままだとビルドのたびに許可を聞かれる。
+# `mise run dev-cert` で作る証明書で署名すると、署名要件が証明書に紐づいて安定する。
+dev_cert="${TATIN_DEV_CERT_NAME:-tatin development}"
+identity="${TATIN_CODESIGN_IDENTITY:-}"
+if [ -z "$identity" ]; then
+    if security find-identity -v -p codesigning | grep -qF "$dev_cert"; then
+        identity="$dev_cert"
+    else
+        identity="-"
+    fi
+fi
 codesign --force --sign "$identity" --timestamp=none "$bundle"
 
 echo "bundled: $bundle"
+if [ "$identity" = "-" ]; then
+    echo "  署名: ad-hoc. mise run dev-cert を流すとキーチェーンの許可が毎回出なくなる"
+else
+    echo "  署名: ${identity}"
+fi
